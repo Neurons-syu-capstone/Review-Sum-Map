@@ -1,0 +1,43 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-base:        #f4f5f7;
+  --bg-surface:     #ffffff;
+  --bg-elevated:    #eef0f3;
+  --border-subtle:  #e0e3e8;
+  --border-default: #c8cdd6;
+  --text-primary:   #1a1d23;
+  --text-secondary: #4a5060;
+  --text-muted:     #8a90a0;
+  --accent-red:     #e53935;
+  --accent-green:   #2e7d32;
+  --accent-orange:  #e65100;
+  --accent-blue:    #1565c0;
+  --accent-yellow:  #f9a825;
+}
+
+html, body, #root {
+  height: 100%;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'IBM Plex Sans KR', 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 3px; }
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+button:hover { opacity: 0.8; }
+
+a { color: var(--accent-blue); text-decoration: none; }
