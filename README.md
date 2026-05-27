@@ -1,6 +1,6 @@
 # Review Intelligence Dashboard
 
-**AI 기반 상품 리뷰 분석 및 이슈 탐지 모듈**
+**AI 기반 상품 리뷰 키워드 분석 및 이슈 탐지 모듈**
 
 리뷰 기반 상품 분석 인사이트 대시보드의 4개 핵심 기능 중 하나
 
@@ -8,7 +8,7 @@
 
 ## 한 줄 요약
 
-Amazon 신발 리뷰 데이터를 전처리·임베딩·GPT 분석 파이프라인으로 처리해, 상품별 aspect(착용감·사이즈·내구성·디자인·가격) 단위 이슈 키워드·요약·긴급도를 자동 추출하고 대시보드로 시각화한다.
+Amazon 신발 리뷰 데이터를 전처리·임베딩·GPT 분석 파이프라인으로 처리해, 상품별 aspect(착용감·사이즈·내구성·디자인·가격) 단위 이슈 키워드·요약·긴급도를 자동 추출하고 워드 클라우드 대시보드로 시각화한다.
 
 ---
 
@@ -54,7 +54,7 @@ Amazon 신발 리뷰 데이터를 전처리·임베딩·GPT 분석 파이프라�
   results.json       ← 상품별 분석 결과 저장
         │
         ▼
-  React Dashboard    ← 긴급 이슈 / aspect 분석 / 키워드 / 대표 리뷰 시각화
+  React Dashboard    ← 긴급 이슈 / 키워드 워드 클라우드 / 전체 리뷰 검색 시각화
 ```
 
 ---
@@ -70,7 +70,7 @@ sample_review/
 │   ├── pipeline.py          # 전처리 + 우선순위 + 분류 + 검증 + 저장
 │   ├── embedder.py          # SBERT 임베딩 + aspect 할당 + 대표 리뷰 추출
 │   ├── llm_analyzer.py      # GPT-4o-mini API 호출 + 프롬프트
-│   ├── api_server.py        # FastAPI 키워드 검색 서버
+│   ├── api_server.py        # FastAPI 키워드 검색 + 빈도수 집계 서버
 │   ├── requirements.txt
 │   ├── .env
 │   └── data/
@@ -89,10 +89,8 @@ sample_review/
         ├── api/
         │   └── resultsApi.js          # results.json 로딩 함수
         ├── components/
-        │   ├── AspectPanel.jsx        # aspect별 분석 카드
-        │   ├── DonutChart.jsx         # 긍정/부정 원 그래프
-        │   ├── KeywordPanel.jsx       # 키워드 버튼
-        │   ├── ReviewDrawer.jsx       # 키워드 클릭 시 리뷰 슬라이드 패널
+        │   ├── ShoeWordCloud.jsx      # 캔버스 기반 워드 클라우드 렌더링
+        │   ├── WordCloudSection.jsx   # 빈도수 fetch + 워드 계산 + 리뷰 패널
         │   └── UrgentIssuePanel.jsx   # 긴급 이슈 카드
         └── pages/
             └── DashboardPage.jsx      # 메인 페이지
@@ -145,7 +143,26 @@ GPT-4o-mini를 호출해 키워드와 요약을 생성한다.
 - temperature 0.2로 hallucination 최소화
 
 ### `api_server.py`
-키워드 클릭 시 전체 리뷰에서 해당 키워드를 검색해 반환하는 FastAPI 서버.
+두 가지 엔드포인트를 제공하는 FastAPI 서버.
+
+- `/keyword-counts` — 상품의 전체 리뷰에서 키워드별 실제 등장 횟수를 계산해 반환. 워드 클라우드 크기 결정에 사용.
+- `/search` — 키워드 클릭 시 전체 리뷰에서 단어별 AND 검색 후 최근순 반환.
+
+### `ShoeWordCloud.jsx`
+캔버스 기반 워드 클라우드 렌더링 컴포넌트.
+
+- 아르키메데스 나선형 배치 알고리즘으로 단어 충돌 없이 배치
+- 폰트 크기 폴백 체인 (100% → 80% → 65% → 50% → 38%) 으로 모든 키워드 표시 보장
+- 이슈 키워드 빨강 / 강점 키워드 초록
+- 빈도수 높을수록 크고 굵게, 낮을수록 작고 가늘게
+
+### `WordCloudSection.jsx`
+워드 클라우드 데이터 관리 및 리뷰 패널 컴포넌트.
+
+- 상품 선택 시 `/keyword-counts` 호출 → 실제 빈도수 기반 fontSize 계산
+- 키워드 클릭 시 `/search` 호출 → 전체 리뷰에서 검색 후 패널 표시
+- API 불가 시 representative_reviews로 폴백
+- 키워드 하이라이트: 불용어 제외 단어별 형광펜 처리
 
 ---
 
@@ -153,6 +170,7 @@ GPT-4o-mini를 호출해 키워드와 요약을 생성한다.
 
 | 메서드 | 경로 | 설명 |
 |---|---|---|
+| `GET` | `/keyword-counts` | product_id로 키워드별 실제 등장 횟수 반환 |
 | `GET` | `/search` | 키워드 + product_id로 전체 리뷰 검색. 최근순 반환 |
 | `GET` | `/health` | 서버 상태 및 로딩된 리뷰 수 확인 |
 
@@ -198,7 +216,7 @@ uvicorn api_server:app --port 8000 --reload
 
 ```bash
 # results.json 복사
-cp backend/data/results.json frontend/public/results.json
+copy backend\data\results.json frontend\public\results.json
 
 cd frontend
 npm install
@@ -206,7 +224,7 @@ npm run dev
 → http://localhost:3000
 ```
 
-백엔드 API 서버를 먼저 실행해야 키워드 클릭 시 전체 리뷰 검색이 동작한다.
+백엔드 API 서버를 먼저 실행해야 키워드 클릭 시 전체 리뷰 검색과 워드 클라우드 빈도수 계산이 동작한다.
 
 ---
 
@@ -250,12 +268,6 @@ backend/data/llm_scores_by_product.json  ← 팀원 스코어보드 데이터
 
 ---
 
-## 비용
-
-GPT-4o-mini 기준 100개 상품 분석 시 약 **$0.40 (약 550원)** 수준.
-
----
-
 ## 개발 현황
 
 ### ✅ 완료
@@ -266,14 +278,8 @@ GPT-4o-mini 기준 100개 상품 분석 시 약 **$0.40 (약 550원)** 수준.
 - GPT-4o-mini aspect별 병렬 호출 (상품당 최대 10회)
 - 스코어보드 연동 urgency score 계산
 - JSON schema 검증 및 폴백 처리
-- FastAPI 키워드 검색 서버
-- React 대시보드 (긴급 이슈·aspect 분석·키워드·대표 리뷰)
+- FastAPI 키워드 빈도수 집계 + 전체 리뷰 검색 서버
+- 캔버스 기반 워드 클라우드 (빈도수 기반 크기, 나선형 배치, 전체 키워드 표시 보장)
+- 키워드 클릭 시 전체 리뷰 검색 + 하이라이트 패널
+- 긴급 이슈 카드
 - 실데이터 100개 상품 분석 완료
-
-### 🔲 남은 작업
-
-| 항목 | 설명 | 우선순위 |
-|---|---|---|
-| 키워드 클릭 리뷰 검색 | api_server.py 연동 완료 후 프론트 연결 | 높음 |
-| 전체 대시보드 통합 | 스코어보드·리스크레이더 등 다른 기능과 탭으로 묶기 | 팀 협의 |
-| 키워드 튜닝 | 실데이터 기반 ASPECT_FILTER_KEYWORDS 보완 | 중간 |
