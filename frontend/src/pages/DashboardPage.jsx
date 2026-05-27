@@ -5,10 +5,8 @@
  */
 
 import { useState, useEffect } from 'react'
-import DonutChart from '../components/DonutChart.jsx'
 import UrgentIssuePanel from '../components/UrgentIssuePanel.jsx'
-import AspectPanel from '../components/AspectPanel.jsx'
-import ReviewDrawer from '../components/ReviewDrawer.jsx'
+import WordCloudSection from '../components/WordCloudSection.jsx'
 
 const ASPECTS = ['comfort', 'size', 'durability', 'design', 'price']
 
@@ -34,7 +32,6 @@ function StarRating({ rating }) {
 
 export default function DashboardPage({ data }) {
   const [selectedIdx, setSelectedIdx] = useState(0)
-  const [drawerState, setDrawerState] = useState(null)
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
   useEffect(() => {
@@ -62,27 +59,11 @@ export default function DashboardPage({ data }) {
   const review_count = product.review_count ||
     { total: 0, positive: 0, negative: 0 }
 
-  const sortedAspects = ASPECTS
-    .filter(a => aspect_analysis[a])
-    .sort((a, b) =>
-      (aspect_analysis[b]?.urgency_score || 0) -
-      (aspect_analysis[a]?.urgency_score || 0)
-    )
-
-  function handleKeywordClick(keyword, sentiment, aspect) {
-    if (drawerState?.keyword === keyword && drawerState?.aspect === aspect) {
-      setDrawerState(null)
-    } else {
-      setDrawerState({ aspect, keyword, sentiment })
-    }
-  }
-
   return (
     <div style={{
       minHeight: '100vh',
       background: 'var(--bg-base)',
-      paddingRight: drawerState ? 420 : 0,
-      transition: 'padding-right 0.25s ease',
+
     }}>
 
       {/* ── 상단 헤더 ── */}
@@ -95,9 +76,9 @@ export default function DashboardPage({ data }) {
         <div style={{ display: 'flex', alignItems: 'flex-start',
           justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <div style={{ flex: 1, minWidth: 0, marginRight: 16 }}>
-            <div style={{ fontSize: 10, color: 'var(--text-muted)',
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-muted)',
               letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 }}>
-              리뷰 분석 대시보드
+              리뷰 키워드 분석
             </div>
 
             {/* 상품명 표시 */}
@@ -174,12 +155,6 @@ export default function DashboardPage({ data }) {
               )}
             </div>
           </div>
-
-          <DonutChart
-            positive={review_count.positive}
-            negative={review_count.negative}
-            total={review_count.total}
-          />
         </div>
       </header>
 
@@ -189,38 +164,10 @@ export default function DashboardPage({ data }) {
         {/* 긴급 이슈 */}
         <UrgentIssuePanel urgentIssues={urgent_issues} />
 
-        {/* Aspect 분석 */}
-        <section>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)',
-            letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>
-            속성별 리뷰 분석 · 긴급 이슈 순
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {sortedAspects.map(aspect => (
-              <AspectPanel
-                key={aspect}
-                aspect={aspect}
-                aspectData={aspect_analysis[aspect]}
-                activeKeyword={drawerState?.aspect === aspect
-                  ? drawerState.keyword : null}
-                keywordSentiment={drawerState?.sentiment}
-                onKeywordClick={handleKeywordClick}
-              />
-            ))}
-          </div>
-        </section>
-      </main>
+        {/* 워드 클라우드 */}
+        <WordCloudSection product={product} />
 
-      {/* 리뷰 드로어 */}
-      {drawerState && (
-        <ReviewDrawer
-          aspect={drawerState.aspect}
-          aspectData={aspect_analysis[drawerState.aspect]}
-          activeKeyword={drawerState.keyword}
-          keywordSentiment={drawerState.sentiment}
-          onClose={() => setDrawerState(null)}
-        />
-      )}
+      </main>
     </div>
   )
 }

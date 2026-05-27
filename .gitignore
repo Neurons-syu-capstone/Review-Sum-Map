@@ -1,6 +1,7 @@
 .env
 __pycache__/
 frontend/node_modules/
+dist/
 
 # 데이터 파일
 backend/data/shoes_sample.json

@@ -144,7 +144,7 @@ Strict rules:
 - Keywords must directly relate to {aspect}: {ASPECT_DEFINITION[aspect]}.
 - Keywords must NOT contain numbers, dates, or measurements.
 - Keywords must NOT be generic: shoe, shoes, product, quality, bad, good, comfortable, uncomfortable, pair, bought.
-- Keywords must be 2-5 words maximum. Never extract full sentences.
+- Keywords must be 1-3 words maximum. Never extract full sentences.
 - Extract 3 to 6 keywords maximum. If fewer than 3 relevant keywords exist, return only what exists.
 - Do not mix in other aspects. Stay strictly inside {aspect}.
 - summary_ko must explain the repeated pattern and buyer impact in Korean.
